@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Disney Character Lookup</title>
+</head>
+<body>
+    <h1>Disney Character Lookup</h1>
+
+    <form id="characterForm">
+        <label for="characterName">Character Name:</label>
+        <input type="text" id="characterName" name="characterName" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <div id="characterResult"></div>
+
+    <form id="updateForm" style="display: none;">
+        <label for="characterId">Character ID:</label>
+        <input type="number" id="characterId" name="characterId" required><br>
+        <label for="updateName">Name:</label>
+        <input type="text" id="updateName" name="updateName" required><br>
+        <label for="sourceUrl">Source URL:</label>
+        <input type="text" id="sourceUrl" name="sourceUrl" required><br>
+        <label for="tvShows">TV Shows:</label>
+        <input type="text" id="tvShows" name="tvShows" required><br>
+        <label for="shortFilms">Short Films:</label>
+        <input type="text" id="shortFilms" name="shortFilms" required><br>
+        <label for="films">Films:</label>
+        <input type="text" id="films" name="films" required><br>
+        <button type="submit">Update</button>
+    </form>
+
+    <script>
+        // Handle form submission
+        document.getElementById("characterForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent the form from submitting
+
+            var characterName = document.getElementById("characterName").value;
+
+            // Call the API endpoint with the provided character name
+            fetch("/character?name=" + encodeURIComponent(characterName))
+                .then(response => response.json())
+                .then(data => {
+                    // Display the character information in the result div
+                    var characterResult = document.getElementById("characterResult");
+                    characterResult.innerHTML = JSON.stringify(data, null, 2);
+
+                    // Show the update form
+                    var updateForm = document.getElementById("updateForm");
+                    updateForm.style.display = "block";
+
+                    // Fill the update form with the character data
+                    document.getElementById("characterId").value = data.id;
+                    document.getElementById("updateName").value = data.name;
+                    document.getElementById("sourceUrl").value = data.sourceUrl;
+                    document.getElementById("tvShows").value = Array.isArray(data.tvShows) ? data.tvShows.join(", ") : "";
+                    document.getElementById("shortFilms").value = Array.isArray(data.shortFilms) ? data.shortFilms.join(", ") : "";
+                    document.getElementById("films").value = Array.isArray(data.films) ? data.films.join(", ") : "";
+                })
+                .catch(error => console.error(error));
+        });
+
+        // Handle update form submission
+        document.getElementById("updateForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent the form from submitting
+
+            var characterId = document.getElementById("characterId").value;
+            var characterName = document.getElementById("updateName").value;
+            var sourceUrl = document.getElementById("sourceUrl").value;
+            var tvShows = document.getElementById("tvShows").value.split(","); // Convert comma-separated string to array
+            var shortFilms = document.getElementById("shortFilms").value.split(",");
+            var films = document.getElementById("films").value.split(",");
+
+            var characterData = {
+                id: characterId,
+                name: characterName,
+                sourceUrl: sourceUrl,
+                tvShows: tvShows,
+                shortFilms: shortFilms,
+                films: films
+            };
+
+            // Call the API endpoint to update the character
+            fetch("/character/update", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(characterData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Check if the response indicates an error
+                    if (data.errors) {
+                        // Display the error messages in the result div
+                        var errorMessages = Object.values(data.errors).flat();
+                        var characterResult = document.getElementById("characterResult");
+                        characterResult.innerHTML = errorMessages.join("<br>");
+                    } else {
+                        // Display the updated character information in the result div
+                        var characterResult = document.getElementById("characterResult");
+                        characterResult.innerHTML = JSON.stringify(data, null, 2);
+                    }
+                })
+                .catch(error => console.error(error));
+        });
+    </script>
+</body>
+</html>
